@@ -9,6 +9,8 @@ on:
       # formats files instead of restricting itself to just listed packages.
       # See if there is a way to have the same behaviour without relying on the
       # tool.
+      race-tests-excludes-regex:
+        type: string
       skip-gofmt:
         type: boolean
       skip-govet:
@@ -16,8 +18,6 @@ on:
       skip-staticcheck:
         type: boolean
       skip-race-tests:
-        type: boolean
-      race-tests-excludes-regex:
         type: boolean
 
 jobs:
