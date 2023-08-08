@@ -11,6 +11,8 @@ on:
       # tool.
       race-tests-excludes-regex:
         type: string
+      coverage-excludes-regex:
+        type: string
       skip-gofmt:
         type: boolean
       skip-govet:
@@ -115,7 +117,13 @@ jobs:
         # Always run unless manually cancelled.
         if: ${{ !cancelled() }}
         run: |
-          go test -v -coverprofile=profile.cov ./...
+          if [ -z "${{ inputs.coverage-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            go test -v -coverprofile=profile.cov ./...
+          else
+            echo "Running for non-excluded packages"
+            go test -v -coverprofile=profile.cov $(go list ./... | egrep -v ${{ inputs.coverage-excludes-regex }})
+          fi
 
       - name: Install goveralls
         if: ${{ !cancelled() }}
