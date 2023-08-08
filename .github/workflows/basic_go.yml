@@ -1,0 +1,131 @@
+name: Common Go
+
+on:
+  workflow_call:
+    inputs:
+      static-analysis-excludes-regex:
+        type: string
+      # TODO(wenvous): gofmt is harder to work with since it always recursively
+      # formats files instead of restricting itself to just listed packages.
+      # See if there is a way to have the same behaviour without relying on the
+      # tool.
+      race-tests-excludes-regex:
+        type: string
+      skip-gofmt:
+        type: boolean
+      skip-govet:
+        type: boolean
+      skip-staticcheck:
+        type: boolean
+      skip-race-tests:
+        type: boolean
+
+jobs:
+  build_and_test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ['1.19', '1.20', '1.x']
+
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go }}
+        id: go
+
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Get dependencies
+        run: |
+          go mod download
+
+      - name: Build packages
+        run: go build -v ./...
+
+      - name: Run Tests
+        run: go test -v ./...
+
+      - name: Run race tests
+        if: ${{ !inputs.skip-race-tests }}
+        run: |
+          if [ -z "${{ inputs.race-tests-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            go test -race -v ./...
+          else
+            echo "Running for non-excluded packages"
+            go test -race -v $(go list ./... | egrep -v "${{ inputs.race-tests-excludes-regex }}")
+          fi
+
+  static_analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.x'
+        id: go
+
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Get dependencies
+        run: |
+          go mod download
+
+      - name: Go Mod should be tidy
+        run: |
+          go mod tidy
+          diff -u <(echo -n) <(git diff)
+
+      - name: Go vet
+        if: ${{ !cancelled() && !inputs.skip-govet }}
+        run: |
+          if [ -z "${{ inputs.static-analysis-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            go vet ./...
+          else
+            echo "Running for non-excluded packages"
+            go vet $(go list ./... | egrep -v "${{ inputs.static-analysis-excludes-regex }}")
+          fi
+
+      - name: Gofmt
+        if: ${{ !cancelled() && !inputs.skip-gofmt }}
+        run: |
+          diff -u <(echo -n) <(gofmt -d -s .)
+
+      - name: Run coverage
+        if: '!cancelled()'
+        run: |
+          go test -v -coverprofile=profile.cov ./...
+
+      - name: Install goveralls
+        if: '!cancelled()'
+        run: go install github.com/mattn/goveralls@latest
+
+      - name: Submit coverage
+        if: '!cancelled()'
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -coverprofile=profile.cov -service=github
+
+      - name: Install staticcheck
+        if: '!cancelled()'
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Staticcheck
+        if: ${{ !cancelled() && !inputs.skip-staticcheck }}
+        run: |
+          if [ -z "${{ inputs.static-analysis-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            staticcheck ./...
+          else
+            echo "Running for non-excluded packages"
+            staticcheck $(go list ./... | egrep -v ${{ inputs.static-analysis-excludes-regex }})
+          fi
