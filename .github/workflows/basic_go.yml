@@ -94,28 +94,41 @@ jobs:
             go vet $(go list ./... | egrep -v "${{ inputs.static-analysis-excludes-regex }}")
           fi
 
+      - name: revive
+        if: ${{ !cancelled() }}
+        run: |
+          go install github.com/mgechev/revive@latest
+          if [ -z "${{ inputs.static-analysis-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            revive ./...
+          else
+            echo "Running for non-excluded packages"
+            revive $(go list ./... | egrep -v ${{ inputs.static-analysis-excludes-regex }})
+          fi
+
       - name: Gofmt
         if: ${{ !cancelled() && !inputs.skip-gofmt }}
         run: |
           diff -u <(echo -n) <(gofmt -d -s .)
 
       - name: Run coverage
-        if: '!cancelled()'
+        # Always run unless manually cancelled.
+        if: ${{ !cancelled() }}
         run: |
           go test -v -coverprofile=profile.cov ./...
 
       - name: Install goveralls
-        if: '!cancelled()'
+        if: ${{ !cancelled() }}
         run: go install github.com/mattn/goveralls@latest
 
       - name: Submit coverage
-        if: '!cancelled()'
+        if: ${{ !cancelled() }}
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: goveralls -coverprofile=profile.cov -service=github
 
       - name: Install staticcheck
-        if: '!cancelled()'
+        if: ${{ !cancelled() }}
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@latest
 
