@@ -41,7 +41,7 @@ jobs:
 
       - name: Get dependencies
         run: |
-          go get -v -t -d ./...
+          go mod download
 
       - name: Build packages
         run: go build -v ./...
@@ -76,7 +76,7 @@ jobs:
 
       - name: Get dependencies
         run: |
-          go get -v -t -d ./...
+          go mod download
 
       - name: Go Mod should be tidy
         run: |
@@ -104,11 +104,15 @@ jobs:
         run: |
           go test -v -coverprofile=profile.cov ./...
 
+      - name: Install goveralls
+        if: '!cancelled()'
+        run: go install github.com/mattn/goveralls@latest
+
       - name: Submit coverage
         if: '!cancelled()'
-        uses: shogo82148/actions-goveralls@v1
-        with:
-          path-to-profile: profile.cov
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -coverprofile=profile.cov -service=github
 
       - name: Install staticcheck
         if: '!cancelled()'
