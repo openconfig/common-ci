@@ -9,6 +9,8 @@ on:
       # formats files instead of restricting itself to just listed packages.
       # See if there is a way to have the same behaviour without relying on the
       # tool.
+      tests-excludes-regex:
+        type: string
       race-tests-excludes-regex:
         type: string
       coverage-excludes-regex:
@@ -49,7 +51,14 @@ jobs:
         run: go build -v ./...
 
       - name: Run Tests
-        run: go test -v ./...
+        run: |
+          if [ -z "${{ inputs.tests-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            go test -v ./...
+          else
+            echo "Running for non-excluded packages"
+            go test -v $(go list ./... | egrep -v "${{ inputs.tests-excludes-regex }}")
+          fi
 
       - name: Run race tests
         if: ${{ !inputs.skip-race-tests }}
