@@ -60,7 +60,13 @@ jobs:
 
       - name: Run Tests
         run: |
-          go test -v ./...
+          if [ -z "${{ inputs.tests-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            go test -v ./...
+          else
+            echo "Running for non-excluded packages"
+            go test -v $(go list ./... | egrep -v "${{ inputs.tests-excludes-regex }}")
+          fi
 
       - name: Run race tests
         if: ${{ !inputs.skip-race-tests }}
