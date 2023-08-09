@@ -76,7 +76,7 @@ jobs:
             go test -race -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -race -v $(go list ./... | egrep -v "${{ inputs.tests-excludes-regex }}")
+            go test -race -v $(go list ./... | egrep -v "${{ inputs.race-tests-excludes-regex }}")
           fi
 
   static_analysis:
