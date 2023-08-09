@@ -19,7 +19,7 @@ on:
         description: 'egrep regex for excluding certain packages from testing'
       race-tests-excludes-regex:
         type: string
-        description: 'egrep regex for excluding certain packages from race testing, this is on top of packages excluded from regular testing'
+        description: 'egrep regex for excluding certain packages from race testing, this DOES NOT include packages excluded from regular testing'
       coverage-excludes-regex:
         type: string
         description: 'egrep regex for excluding certain packages from coverage reporting'
@@ -76,7 +76,7 @@ jobs:
             go test -race -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -race -v $(go list ./... | egrep -v "${{ inputs.tests-excludes-regex }}" | egrep -v "${{ inputs.race-tests-excludes-regex }}")
+            go test -race -v $(go list ./... | egrep -v "${{ inputs.tests-excludes-regex }}")
           fi
 
   static_analysis:
