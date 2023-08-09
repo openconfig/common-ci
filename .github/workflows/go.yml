@@ -61,12 +61,15 @@ jobs:
             go test -v -coverprofile=profile.cov $(go list ./... | grep -E -v ${{ inputs.coverage-excludes-regex }})
           fi
 
-      - name: Send coverage
-        uses: shogo82148/actions-goveralls@v1
-        with:
-          path-to-profile: profile.cov
-          flag-name: Go-${{ matrix.go }}
-          parallel: true
+      - name: Install goveralls
+        if: ${{ matrix.go == fromJson(inputs.go-versions)[-1] }}
+        run: go install github.com/mattn/goveralls@latest
+
+      - name: Submit coverage
+        if: ${{ matrix.go == fromJson(inputs.go-versions)[-1] }}
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -coverprofile=profile.cov -service=github
 
       - name: Run Tests
         run: |
@@ -88,15 +91,6 @@ jobs:
             echo "Running for non-excluded packages"
             go test -race -v $(go list ./... | grep -E -v "${{ inputs.race-tests-excludes-regex }}")
           fi
-
-  # notifies that all test jobs are finished.
-  build_and_test_finish:
-    needs: build_and_test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: shogo82148/actions-goveralls@v1
-        with:
-          parallel-finished: true
 
   golangci:
     name: lint
