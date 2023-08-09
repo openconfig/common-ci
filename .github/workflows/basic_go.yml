@@ -192,5 +192,5 @@ jobs:
             staticcheck ./...
           else
             echo "Running for non-excluded packages"
-            staticcheck $(go list ./... | grep -E -v ${{ inputs.static-analysis-excludes-regex }})
+            GOGC=30 staticcheck $(go list ./... | grep -E -v ${{ inputs.static-analysis-excludes-regex }})
           fi
