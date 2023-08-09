@@ -7,7 +7,7 @@ on:
         type: string
         # Arrays are currently not accepted:
         # https://github.com/orgs/community/discussions/11692
-        default: "['1.19', '1.20', '1.x']"
+        default: "['1.x', '1.20', '1.19']"
       static-analysis-excludes-regex:
         type: string
       # TODO(wenvous): gofmt is harder to work with since it always recursively
@@ -170,6 +170,9 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@latest
+          # Couple debug statements if this job ever runs out of space.
+          df -h
+          du -ha ./* | sort -hr | head -20
 
       - name: Cache for staticcheck
         if: ${{ !cancelled() && !inputs.skip-staticcheck }}
@@ -184,8 +187,6 @@ jobs:
       - name: Staticcheck
         if: ${{ !cancelled() && !inputs.skip-staticcheck }}
         run: |
-          df -h
-          du -ha ./* | sort -hr | head -20
           if [ -z "${{ inputs.static-analysis-excludes-regex }}" ]; then
             echo "Running for all packages"
             staticcheck ./...

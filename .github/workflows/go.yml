@@ -7,7 +7,7 @@ on:
         type: string
         # Arrays are currently not accepted:
         # https://github.com/orgs/community/discussions/11692
-        default: "['1.19', '1.20', '1.x']"
+        default: "['1.x', '1.20', '1.19']"
       tests-excludes-regex:
         type: string
         description: 'grep -E regex for excluding certain packages from testing'
@@ -62,7 +62,7 @@ jobs:
           fi
 
       - name: Install goveralls
-        if: ${{ matrix.go == fromJson(inputs.go-versions)[-1] }}
+        if: ${{ matrix.go == fromJson(inputs.go-versions)[0] }}
         run: go install github.com/mattn/goveralls@latest
 
       - name: Submit coverage
