@@ -65,3 +65,6 @@ jobs:
       skip-gofmt: true
       skip-staticcheck: true
 ```
+
+For all supported flags, see the corresponding reusable workflow definitions
+under .github/workflows.
