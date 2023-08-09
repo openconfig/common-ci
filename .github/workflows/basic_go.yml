@@ -65,7 +65,7 @@ jobs:
             go test -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -v "$(go list ./... | grep -E -v \"${{ inputs.tests-excludes-regex }}\"")
+            go test -v $(go list ./... | grep -E -v "${{ inputs.tests-excludes-regex }}")
           fi
 
       - name: Run race tests
@@ -76,7 +76,7 @@ jobs:
             go test -race -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -race -v "$(go list ./... | grep -E -v \"${{ inputs.race-tests-excludes-regex }}\"")
+            go test -race -v $(go list ./... | grep -E -v "${{ inputs.race-tests-excludes-regex }}")
           fi
 
   static_analysis:
@@ -110,7 +110,7 @@ jobs:
             go vet ./...
           else
             echo "Running for non-excluded packages"
-            go vet "$(go list ./... | grep -E -v \"${{ inputs.static-analysis-excludes-regex }}\"")
+            go vet $(go list ./... | grep -E -v "${{ inputs.static-analysis-excludes-regex }}")
           fi
 
       - name: revive
@@ -122,7 +122,7 @@ jobs:
             revive ./...
           else
             echo "Running for non-excluded packages"
-            revive "$(go list ./... | grep -E -v \"${{ inputs.static-analysis-excludes-regex }}\"")
+            revive $(go list ./... | grep -E -v ${{ inputs.static-analysis-excludes-regex }})
           fi
 
       - name: Gofmt
@@ -139,7 +139,7 @@ jobs:
             go test -v -coverprofile=profile.cov ./...
           else
             echo "Running for non-excluded packages"
-            go test -v -coverprofile=profile.cov "$(go list ./... | grep -E -v \"${{ inputs.coverage-excludes-regex }}\"")
+            go test -v -coverprofile=profile.cov $(go list ./... | grep -E -v ${{ inputs.coverage-excludes-regex }})
           fi
 
       - name: Install goveralls
@@ -177,5 +177,5 @@ jobs:
             staticcheck ./...
           else
             echo "Running for non-excluded packages"
-            staticcheck "$(go list ./... | grep -E -v \"${{ inputs.static-analysis-excludes-regex }}\"")
+            staticcheck $(go list ./... | grep -E -v ${{ inputs.static-analysis-excludes-regex }})
           fi
