@@ -75,7 +75,7 @@ jobs:
             go test -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -v "$(go list ./... | grep -E -v \"${{ inputs.tests-excludes-regex }}\"")
+            go test -v $(go list ./... | grep -E -v "${{ inputs.tests-excludes-regex }}")
           fi
 
       - name: Run race tests
@@ -86,7 +86,7 @@ jobs:
             go test -race -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -race -v "$(go list ./... | grep -E -v \"${{ inputs.race-tests-excludes-regex }}\"")
+            go test -race -v $(go list ./... | grep -E -v "${{ inputs.race-tests-excludes-regex }}")
           fi
 
   # notifies that all test jobs are finished.

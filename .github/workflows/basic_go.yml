@@ -171,7 +171,7 @@ jobs:
         if: ${{ !cancelled() && !inputs.skip-staticcheck }}
         run: |
           df -h
-          du -ha * | sort -hr | head -20
+          du -ha ./* | sort -hr | head -20
           if [ -z "${{ inputs.static-analysis-excludes-regex }}" ]; then
             echo "Running for all packages"
             staticcheck ./...
