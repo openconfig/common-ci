@@ -67,4 +67,4 @@ jobs:
 ```
 
 For all supported flags, see the corresponding reusable workflow definitions
-under .github/workflows.
+under [.github/workflows](.github/workflows).
