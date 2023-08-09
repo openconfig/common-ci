@@ -3,26 +3,31 @@ name: Common Go
 on:
   workflow_call:
     inputs:
+      go-versions:
+        type: string
+        # Arrays are currently not accepted:
+        # https://github.com/orgs/community/discussions/11692
+        default: "['1.19', '1.20', '1.x']"
       tests-excludes-regex:
         type: string
+        description: 'egrep regex for excluding certain packages from testing'
       race-tests-excludes-regex:
         type: string
+        description: 'egrep regex for excluding certain packages from race testing'
       coverage-excludes-regex:
         type: string
+        description: 'egrep regex for excluding certain packages from coverage reporting'
       skip-race-tests:
         type: boolean
-      single-go-version:
-        type: string
 
 jobs:
   build_and_test:
-    if: ${{ inputs.single-go-version == '' }}
     name: Build and Test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.19', '1.20', '1.x']
+        go: ${{ fromJson(inputs.go-versions) }}
 
     steps:
       - name: Set up Go
@@ -47,7 +52,6 @@ jobs:
         run: go build -v ./...
 
       - name: Run coverage
-        if: ${{ matrix.go == '1.x' }}
         run: |
           if [ -z "${{ inputs.coverage-excludes-regex }}" ]; then
             echo "Running for all packages"
@@ -57,9 +61,12 @@ jobs:
             go test -v -coverprofile=profile.cov $(go list ./... | egrep -v ${{ inputs.coverage-excludes-regex }})
           fi
 
-      - name: Install goveralls
-        if: ${{ matrix.go == '1.x' }}
-        run: go install github.com/mattn/goveralls@latest
+      - name: Send coverage
+        uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: profile.cov
+          flag-name: Go-${{ matrix.go }}
+          parallel: true
 
       - name: Run Tests
         run: |
@@ -82,66 +89,14 @@ jobs:
             go test -race -v $(go list ./... | egrep -v "${{ inputs.race-tests-excludes-regex }}")
           fi
 
-  build_and_test_single:
-    if: ${{ inputs.single-go-version != '' }}
-    name: Build and Test
+  # notifies that all test jobs are finished.
+  build_and_test_finish:
+    needs: build_and_test
     runs-on: ubuntu-latest
-
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: shogo82148/actions-goveralls@v1
         with:
-          go-version: ${{ matrix.go }}
-        id: go
-
-      - name: Check out code
-        uses: actions/checkout@v3
-
-      - name: Get dependencies
-        run: |
-          go mod download
-
-      - name: Go Mod should be tidy
-        run: |
-          go mod tidy
-          diff -u <(echo -n) <(git diff)
-
-      - name: Build packages
-        run: go build -v ./...
-
-      - name: Run coverage
-        run: |
-          if [ -z "${{ inputs.coverage-excludes-regex }}" ]; then
-            echo "Running for all packages"
-            go test -v -coverprofile=profile.cov ./...
-          else
-            echo "Running for non-excluded packages"
-            go test -v -coverprofile=profile.cov $(go list ./... | egrep -v ${{ inputs.coverage-excludes-regex }})
-          fi
-
-      - name: Install goveralls
-        run: go install github.com/mattn/goveralls@latest
-
-      - name: Run Tests
-        run: |
-          if [ -z "${{ inputs.tests-excludes-regex }}" ]; then
-            echo "Running for all packages"
-            go test -v ./...
-          else
-            echo "Running for non-excluded packages"
-            go test -v $(go list ./... | egrep -v "${{ inputs.tests-excludes-regex }}")
-          fi
-
-      - name: Run race tests
-        if: ${{ !inputs.skip-race-tests }}
-        run: |
-          if [ -z "${{ inputs.race-tests-excludes-regex }}" ]; then
-            echo "Running for all packages"
-            go test -race -v ./...
-          else
-            echo "Running for non-excluded packages"
-            go test -race -v $(go list ./... | egrep -v "${{ inputs.race-tests-excludes-regex }}")
-          fi
+          parallel-finished: true
 
   golangci:
     name: lint
