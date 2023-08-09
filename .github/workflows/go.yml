@@ -10,13 +10,13 @@ on:
         default: "['1.19', '1.20', '1.x']"
       tests-excludes-regex:
         type: string
-        description: 'egrep regex for excluding certain packages from testing'
+        description: 'grep -E regex for excluding certain packages from testing'
       race-tests-excludes-regex:
         type: string
-        description: 'egrep regex for excluding certain packages from race testing, this DOES NOT include packages excluded from regular testing'
+        description: 'grep -E regex for excluding certain packages from race testing, this DOES NOT include packages excluded from regular testing'
       coverage-excludes-regex:
         type: string
-        description: 'egrep regex for excluding certain packages from coverage reporting'
+        description: 'grep -E regex for excluding certain packages from coverage reporting'
       skip-race-tests:
         type: boolean
 
@@ -58,7 +58,7 @@ jobs:
             go test -v -coverprofile=profile.cov ./...
           else
             echo "Running for non-excluded packages"
-            go test -v -coverprofile=profile.cov $(go list ./... | egrep -v ${{ inputs.coverage-excludes-regex }})
+            go test -v -coverprofile=profile.cov $(go list ./... | grep -E -v ${{ inputs.coverage-excludes-regex }})
           fi
 
       - name: Send coverage
@@ -75,7 +75,7 @@ jobs:
             go test -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -v $(go list ./... | egrep -v "${{ inputs.tests-excludes-regex }}")
+            go test -v "$(go list ./... | grep -E -v \"${{ inputs.tests-excludes-regex }}\"")
           fi
 
       - name: Run race tests
@@ -86,7 +86,7 @@ jobs:
             go test -race -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -race -v $(go list ./... | egrep -v "${{ inputs.race-tests-excludes-regex }}")
+            go test -race -v "$(go list ./... | grep -E -v \"${{ inputs.race-tests-excludes-regex }}\"")
           fi
 
   # notifies that all test jobs are finished.

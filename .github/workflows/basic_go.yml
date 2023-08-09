@@ -16,13 +16,13 @@ on:
       # tool.
       tests-excludes-regex:
         type: string
-        description: 'egrep regex for excluding certain packages from testing'
+        description: 'grep -E regex for excluding certain packages from testing'
       race-tests-excludes-regex:
         type: string
-        description: 'egrep regex for excluding certain packages from race testing, this DOES NOT include packages excluded from regular testing'
+        description: 'grep -E regex for excluding certain packages from race testing, this DOES NOT include packages excluded from regular testing'
       coverage-excludes-regex:
         type: string
-        description: 'egrep regex for excluding certain packages from coverage reporting'
+        description: 'grep -E regex for excluding certain packages from coverage reporting'
       skip-gofmt:
         type: boolean
       skip-govet:
@@ -65,7 +65,7 @@ jobs:
             go test -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -v $(go list ./... | egrep -v "${{ inputs.tests-excludes-regex }}")
+            go test -v "$(go list ./... | grep -E -v \"${{ inputs.tests-excludes-regex }}\"")
           fi
 
       - name: Run race tests
@@ -76,7 +76,7 @@ jobs:
             go test -race -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -race -v $(go list ./... | egrep -v "${{ inputs.race-tests-excludes-regex }}")
+            go test -race -v "$(go list ./... | grep -E -v \"${{ inputs.race-tests-excludes-regex }}\"")
           fi
 
   static_analysis:
@@ -110,7 +110,7 @@ jobs:
             go vet ./...
           else
             echo "Running for non-excluded packages"
-            go vet $(go list ./... | egrep -v "${{ inputs.static-analysis-excludes-regex }}")
+            go vet "$(go list ./... | grep -E -v \"${{ inputs.static-analysis-excludes-regex }}\"")
           fi
 
       - name: revive
@@ -122,7 +122,7 @@ jobs:
             revive ./...
           else
             echo "Running for non-excluded packages"
-            revive $(go list ./... | egrep -v ${{ inputs.static-analysis-excludes-regex }})
+            revive "$(go list ./... | grep -E -v \"${{ inputs.static-analysis-excludes-regex }}\"")
           fi
 
       - name: Gofmt
@@ -139,7 +139,7 @@ jobs:
             go test -v -coverprofile=profile.cov ./...
           else
             echo "Running for non-excluded packages"
-            go test -v -coverprofile=profile.cov $(go list ./... | egrep -v ${{ inputs.coverage-excludes-regex }})
+            go test -v -coverprofile=profile.cov "$(go list ./... | grep -E -v \"${{ inputs.coverage-excludes-regex }}\"")
           fi
 
       - name: Install goveralls
@@ -156,6 +156,8 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@latest
+          df -h
+          du -ha * | sort -hr | head -20
 
       - name: Cache for staticcheck
         if: ${{ !cancelled() && !inputs.skip-staticcheck }}
@@ -175,5 +177,5 @@ jobs:
             staticcheck ./...
           else
             echo "Running for non-excluded packages"
-            staticcheck $(go list ./... | egrep -v ${{ inputs.static-analysis-excludes-regex }})
+            staticcheck "$(go list ./... | grep -E -v \"${{ inputs.static-analysis-excludes-regex }}\"")
           fi
