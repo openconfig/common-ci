@@ -37,7 +37,7 @@ If you do not want to maintain linter configuration, then you may use the basic
 workflow, which only involves copying the following into your repository's
 `.github/workflows/go.yml`:
 
-```
+```yaml
 name: Go
 
 on:
