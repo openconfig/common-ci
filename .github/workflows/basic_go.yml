@@ -1,4 +1,4 @@
-name: Common Go
+name: Basic Go
 
 on:
   workflow_call:
