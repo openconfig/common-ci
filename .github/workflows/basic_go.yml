@@ -102,16 +102,6 @@ jobs:
           go mod tidy
           diff -u <(echo -n) <(git diff)
 
-      - name: Cache for staticcheck
-        if: ${{ !cancelled() && !inputs.skip-staticcheck }}
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/staticcheck
-            cache_folder=$(go env GOCACHE)
-          key: ${{ github.job }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ github.job }}-${{ hashFiles('**/go.sum') }}
-
       - name: Go vet
         if: ${{ !cancelled() && !inputs.skip-govet }}
         run: |
