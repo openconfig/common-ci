@@ -4,7 +4,7 @@
 
 Copy the following into your repository's `.github/workflows/go.yml`:
 
-```
+```yaml
 name: Go
 
 on:
@@ -56,7 +56,7 @@ jobs:
 
 Some flags are supported for customizing the CI workflow, for example,
 
-```
+```yaml
 jobs:
   go:
     uses: openconfig/common-ci/.github/workflows/basic_go.yml@v1.0.0
