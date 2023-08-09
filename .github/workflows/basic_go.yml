@@ -42,14 +42,14 @@ jobs:
         go: ${{ fromJson(inputs.go-versions) }}
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go }}
         id: go
-
-      - name: Check out code
-        uses: actions/checkout@v3
 
       - name: Get dependencies
         run: |
@@ -84,14 +84,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
       - name: Install Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.x'
         id: go
-
-      - name: Check out code
-        uses: actions/checkout@v3
 
       - name: Get dependencies
         run: |
@@ -101,6 +101,16 @@ jobs:
         run: |
           go mod tidy
           diff -u <(echo -n) <(git diff)
+
+      - name: Cache for staticcheck
+        if: ${{ !cancelled() && !inputs.skip-staticcheck }}
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/staticcheck
+            cache_folder=$(go env GOCACHE)
+          key: ${{ github.job }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ github.job }}-${{ hashFiles('**/go.sum') }}
 
       - name: Go vet
         if: ${{ !cancelled() && !inputs.skip-govet }}
@@ -163,6 +173,7 @@ jobs:
         with:
           path: |
             ~/.cache/staticcheck
+            cache_folder=$(go env GOCACHE)
           key: ${{ github.job }}-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ github.job }}-${{ hashFiles('**/go.sum') }}
 
