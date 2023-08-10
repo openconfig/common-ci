@@ -179,14 +179,14 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            ~/.cache/staticcheck
-            cache_folder=$(go env GOCACHE)
+            ${{ runner.temp }}/staticcheck
           key: ${{ github.job }}-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ github.job }}-${{ hashFiles('**/go.sum') }}
 
       - name: Staticcheck
         if: ${{ !cancelled() && !inputs.skip-staticcheck }}
         run: |
+          export STATICCHECK_CACHE="${{ runner.temp }}/staticcheck"
           if [ -z "${{ inputs.static-analysis-excludes-regex }}" ]; then
             echo "Running for all packages"
             staticcheck ./...
