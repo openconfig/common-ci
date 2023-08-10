@@ -189,7 +189,7 @@ jobs:
           export STATICCHECK_CACHE="${{ runner.temp }}/staticcheck"
           if [ -z "${{ inputs.static-analysis-excludes-regex }}" ]; then
             echo "Running for all packages"
-            staticcheck ./...
+            GOGC=30 staticcheck ./...
           else
             echo "Running for non-excluded packages"
             GOGC=30 staticcheck $(go list ./... | grep -E -v ${{ inputs.static-analysis-excludes-regex }})
