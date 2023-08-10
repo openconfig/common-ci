@@ -7,7 +7,7 @@ on:
         type: string
         # Arrays are currently not accepted:
         # https://github.com/orgs/community/discussions/11692
-        default: "['1.x', '1.20', '1.19']"
+        default: "['stable', 'oldstable']"
       tests-excludes-regex:
         type: string
         description: 'grep -E regex for excluding certain packages from testing'
@@ -104,7 +104,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.x'
+          go-version: 'stable'
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
