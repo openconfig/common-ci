@@ -1,0 +1,133 @@
+name: Go
+
+on:
+  workflow_call:
+    inputs:
+      go-versions:
+        type: string
+        # Arrays are currently not accepted:
+        # https://github.com/orgs/community/discussions/11692
+        default: "['stable', 'oldstable']"
+      tests-excludes-regex:
+        type: string
+        description: 'grep -E regex for excluding certain packages from testing'
+      race-tests-excludes-regex:
+        type: string
+        description: 'grep -E regex for excluding certain packages from race testing, this DOES NOT include packages excluded from regular testing'
+      coverage-excludes-regex:
+        type: string
+        description: 'grep -E regex for excluding certain packages from coverage reporting'
+      skip-race-tests:
+        type: boolean
+
+jobs:
+  build_and_test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ${{ fromJson(inputs.go-versions) }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go }}
+        id: go
+
+      - name: Get dependencies
+        run: |
+          go mod download
+
+      - name: Go Mod should be tidy
+        run: |
+          go mod tidy
+          diff -u <(echo -n) <(git diff)
+
+      - name: Build packages
+        run: go build -v ./...
+
+      - name: Run coverage
+        run: |
+          if [ -z "${{ inputs.coverage-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            go test -v -coverprofile=profile.cov ./...
+          else
+            echo "Running for non-excluded packages"
+            go test -v -coverprofile=profile.cov $(go list ./... | grep -E -v ${{ inputs.coverage-excludes-regex }})
+          fi
+
+      - name: Install goveralls
+        if: ${{ matrix.go == fromJson(inputs.go-versions)[0] }}
+        run: go install github.com/mattn/goveralls@latest
+
+      - name: Submit coverage
+        if: ${{ matrix.go == fromJson(inputs.go-versions)[0] }}
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -coverprofile=profile.cov -service=github
+
+      - name: Run Tests
+        run: |
+          if [ -z "${{ inputs.tests-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            go test -v ./...
+          else
+            echo "Running for non-excluded packages"
+            go test -v $(go list ./... | grep -E -v "${{ inputs.tests-excludes-regex }}")
+          fi
+
+      - name: Run race tests
+        if: ${{ !inputs.skip-race-tests }}
+        run: |
+          if [ -z "${{ inputs.race-tests-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            go test -race -v ./...
+          else
+            echo "Running for non-excluded packages"
+            go test -race -v $(go list ./... | grep -E -v "${{ inputs.race-tests-excludes-regex }}")
+          fi
+
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 'stable'
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
+          version: latest
+
+          # Optional: working directory, useful for monorepos
+          # working-directory: somedir
+
+          # Optional: golangci-lint command line arguments.
+          # args: --issues-exit-code=0
+          args: --config=.github/linters/.golangci.yml
+
+          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          # only-new-issues: true
+
+          # Optional: if set to true then the all caching functionality will be complete disabled,
+          #           takes precedence over all other caching options.
+          # skip-cache: true
+
+          # Optional: if set to true then the action don't cache or restore ~/go/pkg.
+          # skip-pkg-cache: true
+
+          # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
+          # skip-build-cache: true

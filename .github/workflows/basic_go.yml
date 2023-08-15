@@ -1,16 +1,31 @@
-name: Common Go
+name: Basic Go
 
 on:
   workflow_call:
     inputs:
+      go-versions:
+        type: string
+        # Arrays are currently not accepted:
+        # https://github.com/orgs/community/discussions/11692
+        default: "['stable' , 'oldstable']"
+      staticcheck-version:
+        type: string
+        default: 'latest'
       static-analysis-excludes-regex:
         type: string
       # TODO(wenvous): gofmt is harder to work with since it always recursively
       # formats files instead of restricting itself to just listed packages.
       # See if there is a way to have the same behaviour without relying on the
       # tool.
+      tests-excludes-regex:
+        type: string
+        description: 'grep -E regex for excluding certain packages from testing'
       race-tests-excludes-regex:
         type: string
+        description: 'grep -E regex for excluding certain packages from race testing, this DOES NOT include packages excluded from regular testing'
+      coverage-excludes-regex:
+        type: string
+        description: 'grep -E regex for excluding certain packages from coverage reporting'
       skip-gofmt:
         type: boolean
       skip-govet:
@@ -27,17 +42,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.19', '1.20', '1.x']
+        go: ${{ fromJson(inputs.go-versions) }}
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go }}
         id: go
-
-      - name: Check out code
-        uses: actions/checkout@v3
 
       - name: Get dependencies
         run: |
@@ -47,7 +62,14 @@ jobs:
         run: go build -v ./...
 
       - name: Run Tests
-        run: go test -v ./...
+        run: |
+          if [ -z "${{ inputs.tests-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            go test -v ./...
+          else
+            echo "Running for non-excluded packages"
+            go test -v $(go list ./... | grep -E -v "${{ inputs.tests-excludes-regex }}")
+          fi
 
       - name: Run race tests
         if: ${{ !inputs.skip-race-tests }}
@@ -57,7 +79,7 @@ jobs:
             go test -race -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -race -v $(go list ./... | egrep -v "${{ inputs.race-tests-excludes-regex }}")
+            go test -race -v $(go list ./... | grep -E -v "${{ inputs.race-tests-excludes-regex }}")
           fi
 
   static_analysis:
@@ -65,14 +87,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
       - name: Install Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.x'
+          go-version: 'stable'
         id: go
-
-      - name: Check out code
-        uses: actions/checkout@v3
 
       - name: Get dependencies
         run: |
@@ -91,7 +113,19 @@ jobs:
             go vet ./...
           else
             echo "Running for non-excluded packages"
-            go vet $(go list ./... | egrep -v "${{ inputs.static-analysis-excludes-regex }}")
+            go vet $(go list ./... | grep -E -v "${{ inputs.static-analysis-excludes-regex }}")
+          fi
+
+      - name: revive
+        if: ${{ !cancelled() }}
+        run: |
+          go install github.com/mgechev/revive@latest
+          if [ -z "${{ inputs.static-analysis-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            revive ./...
+          else
+            echo "Running for non-excluded packages"
+            revive $(go list ./... | grep -E -v ${{ inputs.static-analysis-excludes-regex }})
           fi
 
       - name: Gofmt
@@ -100,32 +134,63 @@ jobs:
           diff -u <(echo -n) <(gofmt -d -s .)
 
       - name: Run coverage
-        if: '!cancelled()'
+        # Always run unless manually cancelled.
+        if: ${{ !cancelled() }}
         run: |
-          go test -v -coverprofile=profile.cov ./...
+          if [ -z "${{ inputs.coverage-excludes-regex }}" ]; then
+            echo "Running for all packages"
+            go test -v -coverprofile=profile.cov ./...
+          else
+            echo "Running for non-excluded packages"
+            go test -v -coverprofile=profile.cov $(go list ./... | grep -E -v ${{ inputs.coverage-excludes-regex }})
+          fi
 
       - name: Install goveralls
-        if: '!cancelled()'
+        if: ${{ !cancelled() }}
         run: go install github.com/mattn/goveralls@latest
 
       - name: Submit coverage
-        if: '!cancelled()'
+        if: ${{ !cancelled() }}
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: goveralls -coverprofile=profile.cov -service=github
 
+  staticcheck:
+    name: staticcheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 'stable'
+        id: go
+
       - name: Install staticcheck
-        if: '!cancelled()'
+        if: ${{ !cancelled() }}
         run: |
-          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install honnef.co/go/tools/cmd/staticcheck@${{ inputs.staticcheck-version }}
+
+      - name: Cache for staticcheck
+        if: ${{ !cancelled() && !inputs.skip-staticcheck }}
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ runner.temp }}/staticcheck
+          key: ${{ github.job }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ github.job }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
 
       - name: Staticcheck
         if: ${{ !cancelled() && !inputs.skip-staticcheck }}
         run: |
+          export STATICCHECK_CACHE="${{ runner.temp }}/staticcheck"
           if [ -z "${{ inputs.static-analysis-excludes-regex }}" ]; then
             echo "Running for all packages"
-            staticcheck ./...
+            GOGC=30 staticcheck ./...
           else
             echo "Running for non-excluded packages"
-            staticcheck $(go list ./... | egrep -v ${{ inputs.static-analysis-excludes-regex }})
+            GOGC=30 staticcheck $(go list ./... | grep -E -v ${{ inputs.static-analysis-excludes-regex }})
           fi
