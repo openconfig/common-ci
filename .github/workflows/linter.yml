@@ -22,7 +22,7 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_GO: false
           VALIDATE_HTML: false
-          VALIDATE_KUBERNETES_KUBEVAL: false
+          VALIDATE_KUBERNETES_KUBECONFORM: false
           VALIDATE_JSCPD: false
           # GitHub actions often contain $(go list ./...) as part of commands
           GITHUB_ACTIONS_COMMAND_ARGS: -ignore SC2046
