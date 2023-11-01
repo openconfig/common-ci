@@ -8,9 +8,10 @@ stability recommendations:
 https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
 
 Do this by simply updating the SHA in the user repository's
-`.github/workflows/go.yml` to the SHA of the current main branch. If you created
-a PR to update the reusable workflow, then this will be available after the PR
-is merged.
+`.github/workflows/go.yml` to the SHA of the current main branch
+([example](https://github.com/openconfig/kne/pull/371/files#diff-678682767f2477de3e3c546746f8568b9a1942b2c647d32331d7e774b8ff8d9f)).
+If you created a PR to update the reusable workflow, then this will be available
+after the PR is merged.
 
 ## First-time Use
 
