@@ -16,7 +16,7 @@ issues:
         - dupl
         - gosec
         - goconst
-    - path: pb\.go
+    - path: \.pb\.go
       linters:
         - gofmt
   new: true
