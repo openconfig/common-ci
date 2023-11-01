@@ -5,7 +5,7 @@
 When updating a repository to use the latest reusable CI workflow on the main
 branch, `<latest SHA>` should be used following the safest security and
 stability recommendations:
-https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
+[Stability Recommendations](https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow)
 
 Do this by simply updating the SHA in the user repository's
 `.github/workflows/go.yml` to the SHA of the current main branch
