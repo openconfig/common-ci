@@ -2,6 +2,16 @@
 
 ## Upgrading CI Version
 
+### Automatically Updating CI Version
+
+GitHub's dependabot supports updating reusable workflows.
+
+Here is an example of how to
+[enable dependabot](https://github.com/openconfig/goyang/pull/253/files), and
+what an [update PR](https://github.com/openconfig/goyang/pull/254) looks like.
+
+### Manually Updating CI Version
+
 When updating a repository to use the latest reusable CI workflow on the main
 branch, `<latest SHA>` should be used following the safest security and
 stability recommendations:
