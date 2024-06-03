@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 jobs:
-  build:
+  proto_breaking:
     name: Identify Breaking Proto Changes
     runs-on: ubuntu-latest
     env:
