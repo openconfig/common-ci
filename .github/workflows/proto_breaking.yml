@@ -52,9 +52,9 @@ jobs:
             for TARGET in ${TARGETS}; do
               local TARGETDIR="$(echo "${TARGET}" | cut -d ":" -f1 | sed 's#^//##')"
               local PROTONAME="$(echo "${TARGET}" | cut -d ":" -f2-)"
-              mkdir -p "${TMPTARGETDIR}"/"${TARGETDIR}"
+              mkdir -p "${TMPTARGETDIR}/${TARGETDIR}"
               bazel build "${TARGET}"
-              cp "${GENF}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin "${TMPTARGETDIR}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin"
+              cp "${GENF}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin" "${TMPTARGETDIR}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin"
             done
           }
 
