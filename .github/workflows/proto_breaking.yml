@@ -77,7 +77,7 @@ jobs:
               if [ "${OUTPUT}" == "" ]; then
                 echo "No breaking changes."
               else
-                echo $OUTPUT
+                echo -e "${OUTPUT}"
                 ERROR=true
               fi
             fi
