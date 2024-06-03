@@ -1,0 +1,87 @@
+name: Identify Breaking Proto Changes
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    name: Identify Breaking Proto Changes
+    runs-on: ubuntu-latest
+    env:
+      BAZEL: bazelisk-linux-amd64
+      BAZELISK_VERSION: v1.19.0
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install bazelisk
+        run: |
+          curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/${BAZELISK_VERSION}/${BAZEL}"
+          chmod +x "${BAZEL}"
+          sudo mv "${BAZEL}" /usr/local/bin/bazel
+      - name: Mount bazel cache
+        uses: actions/cache@v4
+        with:
+          # See https://docs.bazel.build/versions/master/output_directories.html
+          path: "~/.cache/bazel"
+          # Create a new cache entry whenever Bazel files change.
+          # See https://docs.github.com/en/actions/guides/caching-dependencies-to-speed-up-workflows
+          key: bazel-${{ runner.os }}-build-${{ hashFiles('**/*.bzl', '**/*.bazel') }}
+          restore-keys: bazel-${{ runner.os }}-build-
+      - name: Compare HEAD and BASE for breaking protobuf changes
+        run: |
+          virtualenv .venv
+          source .venv/bin/activate
+          pip install git+https://github.com/googleapis/proto-breaking-change-detector.git@v2.4.0
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          BASE="$(git merge-base origin/main "${HEAD}")"
+          TMPDIR="$(mktemp -d -t compare-XXXX)"
+          TMPDIRBASE="${TMPDIR}/base"
+          TMPDIRHEAD="${TMPDIR}/head"
+
+          extract_protodesc() {
+            local TMPTARGETDIR="${1}"
+            local TARGETS="$(bazel query 'attr("generator_function", "proto_library", "//...")' 2>/dev/null)"
+            local GENF="$(bazel info bazel-genfiles)"
+            for TARGET in ${TARGETS}; do
+              local TARGETDIR="$(echo "${TARGET}" | cut -d ":" -f1 | sed 's#^//##')"
+              local PROTONAME="$(echo "${TARGET}" | cut -d ":" -f2-)"
+              mkdir -p "${TMPTARGETDIR}"/"${TARGETDIR}"
+              bazel build "${TARGET}"
+              cp "${GENF}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin "${TMPTARGETDIR}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin"
+            done
+          }
+
+          bazel clean
+          extract_protodesc "${TMPDIRHEAD}"
+          git checkout "${BASE}"
+          bazel clean
+          BASETARGETS="$(bazel query 'attr("generator_function", "proto_library", "//...")' 2>/dev/null)"
+          extract_protodesc "${TMPDIRBASE}"
+
+          ERROR=false
+          for TARGET in ${BASETARGETS}; do
+            TARGETDIR="$(echo "${TARGET}" | cut -d ":" -f1 | sed 's#^//##')"
+            PROTONAME="$(echo "${TARGET}" | cut -d ":" -f2-)"
+            BASEPROTODESC="${TMPDIRBASE}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin"
+            HEADPROTODESC="${TMPDIRHEAD}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin"
+            if [ -f ${BASEPROTODESC} ] && [ -f ${HEADPROTODESC} ]; then
+              echo "Comparing build target ${TARGET} at HEAD and BASE..."
+              OUTPUT=$(proto-breaking-change-detector --original_descriptor_set_file_path="${BASEPROTODESC}" --update_descriptor_set_file_path="${HEADPROTODESC}" --human_readable_message 2>&1)
+              if [ "${OUTPUT}" == "" ]; then
+                echo "No breaking changes."
+              else
+                echo $OUTPUT
+                ERROR=true
+              fi
+            fi
+            if [ -f "${BASEPROTODESC}" ] && ! [ -f "${HEADPROTODESC}" ]; then
+              ERROR=true
+              echo "${BASEPROTODESC} exists and ${HEADPROTODESC} does not: removing a proto library is breaking."
+            fi
+          done
+          if [ "${ERROR}" == "true" ]; then
+            exit 1
+          fi
