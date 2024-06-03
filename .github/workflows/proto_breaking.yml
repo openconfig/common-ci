@@ -30,9 +30,13 @@ jobs:
           # See https://docs.github.com/en/actions/guides/caching-dependencies-to-speed-up-workflows
           key: bazel-${{ runner.os }}-build-${{ hashFiles('**/*.bzl', '**/*.bazel') }}
           restore-keys: bazel-${{ runner.os }}-build-
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
       - name: Compare HEAD and BASE for breaking protobuf changes
         run: |
-          virtualenv .venv
+          python3 -m venv .venv
           source .venv/bin/activate
           pip install git+https://github.com/googleapis/proto-breaking-change-detector.git@v2.4.0
           HEAD="${{ github.event.pull_request.head.sha }}"
