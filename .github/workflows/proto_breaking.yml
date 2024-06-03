@@ -47,7 +47,7 @@ jobs:
 
           extract_protodesc() {
             local TMPTARGETDIR="${1}"
-            local TARGETS="$(bazel query 'attr("generator_function", "proto_library", "//...")' 2>/dev/null)"
+            local TARGETS="$(bazel query 'attr("generator_function", "^proto_library$", "//...")' 2>/dev/null)"
             local GENF="$(bazel info bazel-genfiles)"
             for TARGET in ${TARGETS}; do
               local TARGETDIR="$(echo "${TARGET}" | cut -d ":" -f1 | sed 's#^//##')"
@@ -62,7 +62,7 @@ jobs:
           extract_protodesc "${TMPDIRHEAD}"
           git checkout "${BASE}"
           bazel clean
-          BASETARGETS="$(bazel query 'attr("generator_function", "proto_library", "//...")' 2>/dev/null)"
+          BASETARGETS="$(bazel query 'attr("generator_function", "^proto_library$", "//...")' 2>/dev/null)"
           extract_protodesc "${TMPDIRBASE}"
 
           ERROR=false
