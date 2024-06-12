@@ -46,15 +46,21 @@ jobs:
           TMPDIRHEAD="${TMPDIR}/head"
 
           extract_protodesc() {
-            local TMPTARGETDIR="${1}"
-            local TARGETS="$(bazel query 'attr("generator_function", "^proto_library$", "//...")' 2>/dev/null)"
-            local GENF="$(bazel info bazel-genfiles)"
+            local TMPTARGETDIR
+            local TARGETS
+            local GENF
+            local TARGETDIR
+            local PROTONAME
+            TMPTARGETDIR="${1}"
+            TARGETS="$(bazel query 'attr("generator_function", "^proto_library$", "//...")' 2>/dev/null)"
+            GENF="$(bazel info bazel-genfiles)"
             for TARGET in ${TARGETS}; do
-              local TARGETDIR="$(echo "${TARGET}" | cut -d ":" -f1 | sed 's#^//##')"
-              local PROTONAME="$(echo "${TARGET}" | cut -d ":" -f2-)"
+              TARGETDIR="$(echo "${TARGET}" | cut -d ":" -f1 | sed 's#^//##')"
+              PROTONAME="$(echo "${TARGET}" | cut -d ":" -f2-)"
               mkdir -p "${TMPTARGETDIR}/${TARGETDIR}"
               bazel build "${TARGET}"
-              cp "${GENF}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin" "${TMPTARGETDIR}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin"
+              cp "${GENF}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin" \
+                "${TMPTARGETDIR}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin"
             done
           }
 
@@ -71,9 +77,10 @@ jobs:
             PROTONAME="$(echo "${TARGET}" | cut -d ":" -f2-)"
             BASEPROTODESC="${TMPDIRBASE}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin"
             HEADPROTODESC="${TMPDIRHEAD}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin"
-            if [ -f ${BASEPROTODESC} ] && [ -f ${HEADPROTODESC} ]; then
+            if [ -f "${BASEPROTODESC}" ] && [ -f "${HEADPROTODESC}" ]; then
               echo "Comparing build target ${TARGET} at HEAD and BASE..."
-              OUTPUT=$(proto-breaking-change-detector --original_descriptor_set_file_path="${BASEPROTODESC}" --update_descriptor_set_file_path="${HEADPROTODESC}" --human_readable_message 2>&1)
+              OUTPUT=$(proto-breaking-change-detector --original_descriptor_set_file_path="${BASEPROTODESC}" \
+                --update_descriptor_set_file_path="${HEADPROTODESC}" --human_readable_message 2>&1)
               if [ "${OUTPUT}" == "" ]; then
                 echo "No breaking changes."
               else
