@@ -1,0 +1,101 @@
+name: Identify Breaking Proto Changes
+
+on:
+  workflow_call:
+
+jobs:
+  proto_breaking:
+    name: Identify Breaking Proto Changes
+    runs-on: ubuntu-latest
+    env:
+      BAZEL: bazelisk-linux-amd64
+      BAZELISK_VERSION: v1.19.0
+      TMPDIRBASE: /tmp/compare/base
+      TMPDIRHEAD: /tmp/compare/head
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install bazelisk
+        run: |
+          curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/${BAZELISK_VERSION}/${BAZEL}"
+          chmod +x "${BAZEL}"
+          sudo mv "${BAZEL}" /usr/local/bin/bazel
+      - name: Mount bazel cache
+        uses: actions/cache@v4
+        with:
+          # See https://docs.bazel.build/versions/master/output_directories.html
+          path: "~/.cache/bazel"
+          # Create a new cache entry whenever Bazel files change.
+          # See https://docs.github.com/en/actions/guides/caching-dependencies-to-speed-up-workflows
+          key: bazel-${{ runner.os }}-build-${{ hashFiles('**/*.bzl', '**/*.bazel') }}
+          restore-keys: bazel-${{ runner.os }}-build-
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Set up proto-breaking-change-detector
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install git+https://github.com/googleapis/proto-breaking-change-detector.git@v2.4.0
+      - name: Build protobuf descriptors at HEAD and BASE
+        run: |
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          BASE="$(git merge-base origin/main "${HEAD}")"
+
+          extract_protodesc() {
+            local TMPTARGETDIR
+            local TARGETS
+            local GENF
+            local TARGETDIR
+            local PROTONAME
+            TMPTARGETDIR="${1}"
+            TARGETS="$(bazel query 'attr("generator_function", "^proto_library$", "//...")' 2>/dev/null)"
+            GENF="$(bazel info bazel-genfiles)"
+            for TARGET in ${TARGETS}; do
+              TARGETDIR="$(echo "${TARGET}" | cut -d ":" -f1 | sed 's#^//##')"
+              PROTONAME="$(echo "${TARGET}" | cut -d ":" -f2-)"
+              mkdir -p "${TMPTARGETDIR}/${TARGETDIR}"
+              bazel build "${TARGET}"
+              cp "${GENF}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin" \
+                "${TMPTARGETDIR}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin"
+            done
+          }
+
+          bazel clean
+          extract_protodesc "${TMPDIRHEAD}"
+          git checkout "${BASE}"
+          bazel clean
+          extract_protodesc "${TMPDIRBASE}"
+      - name: Compare HEAD and BASE for breaking protobuf changes
+        run: |
+          source .venv/bin/activate
+          BASETARGETS="$(bazel query 'attr("generator_function", "^proto_library$", "//...")' 2>/dev/null)"
+          ERROR=false
+          for TARGET in ${BASETARGETS}; do
+            TARGETDIR="$(echo "${TARGET}" | cut -d ":" -f1 | sed 's#^//##')"
+            PROTONAME="$(echo "${TARGET}" | cut -d ":" -f2-)"
+            BASEPROTODESC="${TMPDIRBASE}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin"
+            HEADPROTODESC="${TMPDIRHEAD}/${TARGETDIR}/${PROTONAME}-descriptor-set.proto.bin"
+            if [ -f "${BASEPROTODESC}" ] && [ -f "${HEADPROTODESC}" ]; then
+              echo "Comparing build target ${TARGET} at HEAD and BASE..."
+              OUTPUT=$(proto-breaking-change-detector --original_descriptor_set_file_path="${BASEPROTODESC}" \
+                --update_descriptor_set_file_path="${HEADPROTODESC}" --human_readable_message 2>&1)
+              if [ "${OUTPUT}" == "" ]; then
+                echo "No breaking changes."
+              else
+                echo -e "${OUTPUT}"
+                ERROR=true
+              fi
+            fi
+            if [ -f "${BASEPROTODESC}" ] && ! [ -f "${HEADPROTODESC}" ]; then
+              ERROR=true
+              echo "${BASEPROTODESC} exists and ${HEADPROTODESC} does not: removing a proto library is breaking."
+            fi
+          done
+          if [ "${ERROR}" == "true" ]; then
+            exit 1
+          fi
