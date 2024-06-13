@@ -10,6 +10,8 @@ jobs:
     env:
       BAZEL: bazelisk-linux-amd64
       BAZELISK_VERSION: v1.19.0
+      TMPDIRBASE: /tmp/compare/base
+      TMPDIRHEAD: /tmp/compare/head
 
     steps:
       - name: Checkout Code
@@ -34,16 +36,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.11
-      - name: Compare HEAD and BASE for breaking protobuf changes
+      - name: Set up proto-breaking-change-detector
         run: |
           python3 -m venv .venv
           source .venv/bin/activate
           pip install git+https://github.com/googleapis/proto-breaking-change-detector.git@v2.4.0
+      - name: Build protobuf descriptors at HEAD and BASE
+        run: |
           HEAD="${{ github.event.pull_request.head.sha }}"
           BASE="$(git merge-base origin/main "${HEAD}")"
-          TMPDIR="$(mktemp -d -t compare-XXXX)"
-          TMPDIRBASE="${TMPDIR}/base"
-          TMPDIRHEAD="${TMPDIR}/head"
 
           extract_protodesc() {
             local TMPTARGETDIR
@@ -68,9 +69,11 @@ jobs:
           extract_protodesc "${TMPDIRHEAD}"
           git checkout "${BASE}"
           bazel clean
-          BASETARGETS="$(bazel query 'attr("generator_function", "^proto_library$", "//...")' 2>/dev/null)"
           extract_protodesc "${TMPDIRBASE}"
-
+      - name: Compare HEAD and BASE for breaking protobuf changes
+        run: |
+          source .venv/bin/activate
+          BASETARGETS="$(bazel query 'attr("generator_function", "^proto_library$", "//...")' 2>/dev/null)"
           ERROR=false
           for TARGET in ${BASETARGETS}; do
             TARGETDIR="$(echo "${TARGET}" | cut -d ":" -f1 | sed 's#^//##')"
