@@ -190,7 +190,7 @@ jobs:
         run: |
           export STATICCHECK_CACHE="${{ runner.temp }}/staticcheck"
           if [ -z "${{ inputs.static-analysis-excludes-deprecated }}" ]; then
-            STATICHECK_ARGS=""
+            STATICCHECK_ARGS=""
           else
             STATICCHECK_ARGS="-SA1019"
           fi
