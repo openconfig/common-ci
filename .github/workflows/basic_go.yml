@@ -13,6 +13,8 @@ on:
         default: 'latest'
       static-analysis-excludes-regex:
         type: string
+      static-analysis-excludes-deprecated:
+        type: boolean
       # TODO(wenvous): gofmt is harder to work with since it always recursively
       # formats files instead of restricting itself to just listed packages.
       # See if there is a way to have the same behaviour without relying on the
@@ -187,10 +189,15 @@ jobs:
         if: ${{ !cancelled() && !inputs.skip-staticcheck }}
         run: |
           export STATICCHECK_CACHE="${{ runner.temp }}/staticcheck"
+          if [ -z "${{ inputs.static-analysis-excludes-deprecated }}"]; then
+            STATICHECK_ARGS=""
+          else
+            STATICCHECK_ARGS="-SA1019"
+          fi
           if [ -z "${{ inputs.static-analysis-excludes-regex }}" ]; then
             echo "Running for all packages"
-            GOGC=30 staticcheck ./...
+            GOGC=30 staticcheck ${STATICCHECK_ARGS} ./...
           else
             echo "Running for non-excluded packages"
-            GOGC=30 staticcheck $(go list ./... | grep -E -v ${{ inputs.static-analysis-excludes-regex }})
+            GOGC=30 staticcheck ${STATICCHECK_ARGS} $(go list ./... | grep -E -v ${{ inputs.static-analysis-excludes-regex }})
           fi
