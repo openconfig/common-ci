@@ -63,7 +63,7 @@ jobs:
 
       - name: Install additional dependencies
         run: |
-          if [ -z "${{ inputs.install-additional-apt-packages }}" ]; then
+          if [ -n "${{ inputs.install-additional-apt-packages }}" ]; then
             echo "Installing additional packages"
             sudo apt-get install ${{ inputs.install-additional-apt-packages }}
           fi
