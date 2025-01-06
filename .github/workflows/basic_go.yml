@@ -200,6 +200,13 @@ jobs:
           key: ${{ github.job }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ github.job }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
 
+      - name: Install additional dependencies
+        run: |
+          if [ -n "${{ inputs.install-additional-apt-packages }}" ]; then
+            echo "Installing additional packages"
+            sudo apt-get install ${{ inputs.install-additional-apt-packages }}
+          fi
+
       - name: Staticcheck
         if: ${{ !cancelled() && !inputs.skip-staticcheck }}
         run: |
