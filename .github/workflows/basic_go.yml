@@ -34,6 +34,9 @@ on:
         type: boolean
       skip-race-tests:
         type: boolean
+      install-additional-apt-packages:
+        type: string
+        description: "apt-get install additional apt packages"
 
 jobs:
   build_and_test:
@@ -57,6 +60,13 @@ jobs:
       - name: Get dependencies
         run: |
           go mod download
+
+      - name: Install additional dependencies
+        run: |
+          if [ -z "${{ inputs.install-additional-apt-packages }}" ]; then
+            echo "Installing additional packages"
+            sudo apt-get install ${{ inputs.install-additional-apt-packages }}
+          fi
 
       - name: Build packages
         run: go build -v ./...
