@@ -159,7 +159,7 @@ jobs:
             go test -v -coverprofile=profile.cov ./...
           else
             echo "Running for non-excluded packages"
-            go test -v -coverprofile=profile.cov $(go list ./... | grep -E -v ${{ inputs.coverage-excludes-regex }})
+            go test -v -coverprofile=profile.cov $(go list ./... | grep -E -v "${{ inputs.coverage-excludes-regex }}")
           fi
 
       - name: Install goveralls
