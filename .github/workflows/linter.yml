@@ -6,18 +6,25 @@ on:
   pull_request:
   workflow_call:
 
+permissions: {}
+
 jobs:
   lint:
     name: Lint Code Base
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      # To report Github Actions status checks
+      statuses: write
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
       - name: Lint Code Base
-        uses: super-linter/super-linter@v5
+        uses: super-linter/super-linter@5119dcd8011e92182ce8219d9e9efc82f16fddb6 # v8
         env:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_GO: false
