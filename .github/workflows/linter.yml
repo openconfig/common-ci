@@ -2,9 +2,9 @@ name: Linter
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-  workflow_call:
+    branches: [main]
+  pull_request: {}
+  workflow_call: {}
 
 permissions: {}
 

@@ -12,13 +12,13 @@ on:
         default: "['stable', 'oldstable']"
       tests-excludes-regex:
         type: string
-        description: 'grep -E regex for excluding certain packages from testing'
+        description: "grep -E regex for excluding certain packages from testing"
       race-tests-excludes-regex:
         type: string
-        description: 'grep -E regex for excluding certain packages from race testing, this DOES NOT include packages excluded from regular testing'
+        description: "grep -E regex for excluding certain packages from race testing, this DOES NOT include packages excluded from regular testing"
       coverage-excludes-regex:
         type: string
-        description: 'grep -E regex for excluding certain packages from coverage reporting'
+        description: "grep -E regex for excluding certain packages from coverage reporting"
       skip-race-tests:
         type: boolean
 
@@ -101,12 +101,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
         with:
-          fetch-depth: '0'
+          fetch-depth: "0"
 
       - name: Install Go
         uses: actions/setup-go@v4
         with:
-          go-version: 'stable'
+          go-version: "stable"
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
