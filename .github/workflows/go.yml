@@ -1,5 +1,7 @@
 name: Go
 
+permissions: {}
+
 on:
   workflow_call:
     inputs:

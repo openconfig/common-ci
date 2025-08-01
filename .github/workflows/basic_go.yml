@@ -1,5 +1,7 @@
 name: Basic Go
 
+permissions: {}
+
 on:
   workflow_call:
     inputs:
@@ -46,6 +48,8 @@ jobs:
       fail-fast: false
       matrix:
         go: ${{ fromJson(inputs.go-versions) }}
+    permissions:
+      contents: read
 
     steps:
       - name: Check out code
@@ -95,6 +99,10 @@ jobs:
   static_analysis:
     name: Static Analysis
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # For goveralls to submit coverage
+      statuses: write
 
     steps:
       - name: Check out code
@@ -175,6 +183,8 @@ jobs:
   staticcheck:
     name: staticcheck
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Check out code
