@@ -3,6 +3,8 @@ name: Identify Breaking Proto Changes
 on:
   workflow_call:
 
+permissions: {}
+
 jobs:
   proto_breaking:
     name: Identify Breaking Proto Changes
@@ -12,6 +14,8 @@ jobs:
       BAZELISK_VERSION: v1.19.0
       TMPDIRBASE: /tmp/compare/base
       TMPDIRHEAD: /tmp/compare/head
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout Code
