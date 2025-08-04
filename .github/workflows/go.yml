@@ -1,5 +1,7 @@
 name: Go
 
+permissions: {}
+
 on:
   workflow_call:
     inputs:
@@ -10,13 +12,13 @@ on:
         default: "['stable', 'oldstable']"
       tests-excludes-regex:
         type: string
-        description: 'grep -E regex for excluding certain packages from testing'
+        description: "grep -E regex for excluding certain packages from testing"
       race-tests-excludes-regex:
         type: string
-        description: 'grep -E regex for excluding certain packages from race testing, this DOES NOT include packages excluded from regular testing'
+        description: "grep -E regex for excluding certain packages from race testing, this DOES NOT include packages excluded from regular testing"
       coverage-excludes-regex:
         type: string
-        description: 'grep -E regex for excluding certain packages from coverage reporting'
+        description: "grep -E regex for excluding certain packages from coverage reporting"
       skip-race-tests:
         type: boolean
 
@@ -31,10 +33,10 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
           go-version: ${{ matrix.go }}
         id: go
@@ -97,14 +99,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
-          fetch-depth: '0'
+          fetch-depth: "0"
 
       - name: Install Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 'stable'
+          go-version: "stable"
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
