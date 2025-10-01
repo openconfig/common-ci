@@ -53,6 +53,7 @@ jobs:
 
     steps:
       - name: Check out code
+        persist-credentials: false
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
       - name: Set up Go
@@ -106,6 +107,7 @@ jobs:
 
     steps:
       - name: Check out code
+        persist-credentials: false
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
       - name: Install Go
@@ -188,6 +190,7 @@ jobs:
 
     steps:
       - name: Check out code
+        persist-credentials: false
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
       - name: Install Go
