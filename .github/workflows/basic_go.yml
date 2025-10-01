@@ -53,8 +53,9 @@ jobs:
 
     steps:
       - name: Check out code
-        persist-credentials: false
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
@@ -67,6 +68,9 @@ jobs:
           go mod download
 
       - name: Install additional dependencies
+        env:
+          # Pass the input as an environment variable
+          APT_PACKAGES: ${{ inputs.install-additional-apt-packages }}
         run: |
           if [ -n "${{ inputs.install-additional-apt-packages }}" ]; then
             echo "Installing additional packages"
@@ -77,6 +81,9 @@ jobs:
         run: go build -v ./...
 
       - name: Run Tests
+        env:
+          # Pass the input as an environment variable
+          APT_PACKAGES: ${{ inputs.tests-excludes-regex }}
         run: |
           if [ -z "${{ inputs.tests-excludes-regex }}" ]; then
             echo "Running for all packages"
@@ -107,8 +114,9 @@ jobs:
 
     steps:
       - name: Check out code
-        persist-credentials: false
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        with:
+          persist-credentials: false
 
       - name: Install Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
@@ -121,6 +129,9 @@ jobs:
           go mod download
 
       - name: Install additional dependencies
+        env:
+          # Pass the input as an environment variable
+          APT_PACKAGES: ${{ inputs.install-additional-apt-packages }}
         run: |
           if [ -n "${{ inputs.install-additional-apt-packages }}" ]; then
             echo "Installing additional packages"
@@ -190,8 +201,9 @@ jobs:
 
     steps:
       - name: Check out code
-        persist-credentials: false
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        with:
+          persist-credentials: false
 
       - name: Install Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
