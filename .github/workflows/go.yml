@@ -59,13 +59,15 @@ jobs:
         run: go build -v ./...
 
       - name: Run coverage
+        env:
+          COVERAGE_EXCLUDES_REGEX: ${{ inputs.coverage-excludes-regex }}
         run: |
-          if [ -z "${{ inputs.coverage-excludes-regex }}" ]; then
+          if [ -z "${COVERAGE_EXCLUDES_REGEX}" ]; then
             echo "Running for all packages"
             go test -v -coverprofile=profile.cov ./...
           else
             echo "Running for non-excluded packages"
-            go test -v -coverprofile=profile.cov $(go list ./... | grep -E -v ${{ inputs.coverage-excludes-regex }})
+            go test -v -coverprofile=profile.cov $(go list ./... | grep -E -v ${COVERAGE_EXCLUDES_REGEX})
           fi
 
       - name: Install goveralls
@@ -79,24 +81,28 @@ jobs:
         run: goveralls -coverprofile=profile.cov -service=github
 
       - name: Run Tests
+        env:
+          TESTS_EXCLUDE_REGEX: ${{ inputs.tests-excludes-regex }}
         run: |
-          if [ -z "${{ inputs.tests-excludes-regex }}" ]; then
+          if [ -z "${TESTS_EXCLUDE_REGEX}" ]; then
             echo "Running for all packages"
             go test -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -v $(go list ./... | grep -E -v "${{ inputs.tests-excludes-regex }}")
+            go test -v $(go list ./... | grep -E -v "${TESTS_EXCLUDE_REGEX}")
           fi
 
       - name: Run race tests
+        env:
+          RACE_TESTS_EXCLUDES_REGEX: ${{ inputs.race-tests-excludes-regex }}
         if: ${{ !inputs.skip-race-tests }}
         run: |
-          if [ -z "${{ inputs.race-tests-excludes-regex }}" ]; then
+          if [ -z "${RACE_TESTS_EXCLUDES_REGEX}" ]; then
             echo "Running for all packages"
             go test -race -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -race -v $(go list ./... | grep -E -v "${{ inputs.race-tests-excludes-regex }}")
+            go test -race -v $(go list ./... | grep -E -v "${RACE_TESTS_EXCLUDES_REGEX}")
           fi
 
   golangci:
