@@ -22,6 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Install bazelisk
         run: |
           curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/${BAZELISK_VERSION}/${BAZEL}"
@@ -36,10 +37,10 @@ jobs:
           # See https://docs.github.com/en/actions/guides/caching-dependencies-to-speed-up-workflows
           key: bazel-${{ runner.os }}-build-${{ hashFiles('**/*.bzl', '**/*.bazel') }}
           restore-keys: bazel-${{ runner.os }}-build-
-      - name: Set up Python 3.11
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: 3.13
       - name: Set up proto-breaking-change-detector
         run: |
           python3 -m venv .venv

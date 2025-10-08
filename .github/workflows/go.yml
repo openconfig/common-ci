@@ -37,8 +37,9 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        with:
+          persist-credentials: false
       - name: Set up Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
@@ -58,13 +59,15 @@ jobs:
         run: go build -v ./...
 
       - name: Run coverage
+        env:
+          COVERAGE_EXCLUDES_REGEX: ${{ inputs.coverage-excludes-regex }}
         run: |
-          if [ -z "${{ inputs.coverage-excludes-regex }}" ]; then
+          if [ -z "${COVERAGE_EXCLUDES_REGEX}" ]; then
             echo "Running for all packages"
             go test -v -coverprofile=profile.cov ./...
           else
             echo "Running for non-excluded packages"
-            go test -v -coverprofile=profile.cov $(go list ./... | grep -E -v ${{ inputs.coverage-excludes-regex }})
+            go test -v -coverprofile=profile.cov $(go list ./... | grep -E -v "${COVERAGE_EXCLUDES_REGEX}")
           fi
 
       - name: Install goveralls
@@ -78,24 +81,28 @@ jobs:
         run: goveralls -coverprofile=profile.cov -service=github
 
       - name: Run Tests
+        env:
+          TESTS_EXCLUDE_REGEX: ${{ inputs.tests-excludes-regex }}
         run: |
-          if [ -z "${{ inputs.tests-excludes-regex }}" ]; then
+          if [ -z "${TESTS_EXCLUDE_REGEX}" ]; then
             echo "Running for all packages"
             go test -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -v $(go list ./... | grep -E -v "${{ inputs.tests-excludes-regex }}")
+            go test -v $(go list ./... | grep -E -v "${TESTS_EXCLUDE_REGEX}")
           fi
 
       - name: Run race tests
+        env:
+          RACE_TESTS_EXCLUDES_REGEX: ${{ inputs.race-tests-excludes-regex }}
         if: ${{ !inputs.skip-race-tests }}
         run: |
-          if [ -z "${{ inputs.race-tests-excludes-regex }}" ]; then
+          if [ -z "${RACE_TESTS_EXCLUDES_REGEX}" ]; then
             echo "Running for all packages"
             go test -race -v ./...
           else
             echo "Running for non-excluded packages"
-            go test -race -v $(go list ./... | grep -E -v "${{ inputs.race-tests-excludes-regex }}")
+            go test -race -v $(go list ./... | grep -E -v "${RACE_TESTS_EXCLUDES_REGEX}")
           fi
 
   golangci:
@@ -105,9 +112,10 @@ jobs:
       contents: read
     steps:
       - name: Check out code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
         with:
           fetch-depth: "0"
+          persist-credentials: false
 
       - name: Install Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
