@@ -37,7 +37,7 @@ jobs:
           # See https://docs.github.com/en/actions/guides/caching-dependencies-to-speed-up-workflows
           key: bazel-${{ runner.os }}-build-${{ hashFiles('**/*.bzl', '**/*.bazel') }}
           restore-keys: bazel-${{ runner.os }}-build-
-      - name: Set up Python 3.11
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: 3.13
