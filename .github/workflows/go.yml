@@ -70,15 +70,12 @@ jobs:
             go test -v -coverprofile=profile.cov $(go list ./... | grep -E -v "${COVERAGE_EXCLUDES_REGEX}")
           fi
 
-      - name: Install goveralls
-        if: ${{ matrix.go == fromJson(inputs.go-versions)[0] }}
-        run: go install github.com/mattn/goveralls@latest
-
       - name: Submit coverage
-        if: ${{ matrix.go == fromJson(inputs.go-versions)[0] }}
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: goveralls -coverprofile=profile.cov -service=github
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: shogo82148/actions-goveralls@25f5320d970fb565100cf1993ada29be1bb196a1 # v1.10.0
+        with:
+          path-to-profile: profile.cov
 
       - name: Run Tests
         env:
