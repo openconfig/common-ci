@@ -29,6 +29,7 @@ jobs:
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_BIOME_LINT: false
           VALIDATE_GO: false
+          VALIDATE_GO_MODULES: false
           VALIDATE_HTML: false
           VALIDATE_KUBERNETES_KUBECONFORM: false
           VALIDATE_JSCPD: false
